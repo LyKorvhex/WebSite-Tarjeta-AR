@@ -3,14 +3,37 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>Tarjeta de Presentación AR</title>
+    <title>Tarjeta de Presentación AR - Juan Daniel Madero</title>
 
-    <!-- A-Frame y AR.js actualizados y estables -->
+    <!-- A-Frame y AR.js actualizados -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
     <script>
-        // Componente para manejar clics e interacciones en elementos 3D
+        // Componente para controlar reproducción de video según la vista del marcador
+        AFRAME.registerComponent('videohandler', {
+            init: function () {
+                var marker = this.el;
+                this.vid = document.querySelector("#profile-video");
+
+                // Reproduce solo cuando el marcador entra en escena
+                marker.addEventListener('markerFound', function () {
+                    if (this.vid) {
+                        this.vid.play();
+                    }
+                }.bind(this));
+
+                // Pausa y reinicia el video cuando se pierde de vista el marcador
+                marker.addEventListener('markerLost', function() {
+                    if (this.vid) {
+                        this.vid.pause();
+                        this.vid.currentTime = 0;
+                    }
+                }.bind(this));
+            }
+        });
+
+        // Componente para manejar enlaces
         AFRAME.registerComponent('linkhandler', {
             schema: { url: { type: 'string', default: '#' } },
             init: function () {
@@ -22,9 +45,59 @@
                 });
             }
         });
+
+        window.addEventListener('DOMContentLoaded', function () {
+            var startBtn = document.querySelector('#start-btn');
+            var overlay = document.querySelector('#start-overlay');
+            var vid = document.querySelector('#profile-video');
+
+            startBtn.addEventListener('click', function () {
+                if (vid) {
+                    vid.muted = false; // Habilita el audio del video
+                    vid.play().then(function() {
+                        vid.pause();
+                        vid.currentTime = 0;
+                    }).catch(function(err) {
+                        console.log("Error al activar audio:", err);
+                    });
+                }
+                overlay.style.display = 'none'; // Oculta la pantalla de inicio
+            });
+        });
     </script>
+
     <style>
         body { margin: 0; overflow: hidden; }
+
+        /* Capa superpuesta para autorizar el audio en móviles */
+        #start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #FFFFFF;
+            font-family: sans-serif;
+        }
+
+        .ar-btn {
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: bold;
+            background-color: #00E676;
+            color: #1E1E1E;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 230, 118, 0.3);
+        }
+
         .ar-instruction {
             position: absolute;
             top: 10px;
@@ -42,29 +115,42 @@
 </head>
 
 <body>
-    <div class="ar-instruction">Apunta la cámara al marcador Hiro impreso</div>
+    <!-- Pantalla de inicio para desbloqueo de audio -->
+    <div id="start-overlay">
+        <p style="margin-bottom: 20px; text-align: center; padding: 0 20px;">
+            Toca el botón para activar la experiencia con audio
+        </p>
+        <button id="start-btn" class="ar-btn">Iniciar Experiencia AR</button>
+    </div>
+
+    <div class="ar-instruction">Apunta la cámara a tu marcador personalizado impreso</div>
 
     <a-scene 
         embedded 
         renderer="antialias: true; alpha: true;" 
         arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
 
-        <!-- Recursos (Imágenes) -->
+        <!-- Recursos (Video) -->
         <a-assets>
-            <!-- Reemplaza 'foto.jpg' por el nombre o ruta de tu fotografía -->
-            <img id="profile-img" src="foto.jpg">
+            <video 
+                id="profile-video" 
+                src="Presentacion.mp4" 
+                preload="auto" 
+                loop 
+                crossorigin 
+                webkit-playsinline 
+                playsinline 
+                muted>
+            </video>
         </a-assets>
 
         <!-- Luces -->
         <a-entity light="type: ambient; intensity: 0.9"></a-entity>
         <a-entity light="type: directional; intensity: 0.4" position="1 2 1"></a-entity>
 
-        <!-- Marcador HIRO -->
-        <a-marker preset="hiro" id="hiroMarker">
-
-            <!-- Panel Contenedor Principal (Plano Negro / Gris Oscuro) -->
+        <!-- MARCADOR DE PATRÓN PERSONALIZADO -->
+        <a-marker type="pattern" url="pattern-Jefito.patt" id="hiroMarker" videohandler>
             <a-entity position="0 0 0" rotation="-90 0 0">
-
                 <a-plane 
                     width="3.2" 
                     height="2.2" 
@@ -73,50 +159,45 @@
                     position="0 0 0">
                 </a-plane>
 
-                <!-- 1. Fotografía de Perfil -->
-                <a-image 
-                    src="#profile-img" 
+                <!-- 1. Video de Presentación -->
+                <a-video 
+                    src="#profile-video" 
                     position="-1.0 0.3 0.05" 
-                    width="0.8" 
-                    height="0.8">
-                </a-image>
+                    width="0.9" 
+                    height="1.2">
+                </a-video>
 
                 <!-- 2. Información Textual -->
-                <!-- Nombre y Apellidos -->
                 <a-text 
-                    value="TU NOMBRE Y APELLIDO" 
+                    value="JUAN DANIEL MADERO ESCOBEDO" 
                     color="#00E676" 
                     width="3.2" 
                     position="-0.4 0.7 0.05" 
                     wrap-count="22">
                 </a-text>
 
-                <!-- Título / Especialidad -->
                 <a-text 
-                    value="Futuro Ing. Informatico" 
+                    value="Futuro Ing. en Computacion" 
                     color="#F4F4F4" 
                     width="2.5" 
                     position="-0.4 0.45 0.05">
                 </a-text>
 
-                <!-- Teléfono -->
                 <a-text 
-                    value="Tel: +52 55 1234 5678" 
+                    value="Tel: +52 492 419 4874" 
                     color="#B0BEC5" 
                     width="2.1" 
                     position="-0.4 0.2 0.05">
                 </a-text>
 
-                <!-- Correo Profesional -->
                 <a-text 
-                    value="Email: tu.correo@ejemplo.com" 
+                    value="Email: 42200936@uaz.edu.mx" 
                     color="#B0BEC5" 
                     width="2.1" 
                     position="-0.4 -0.02 0.05">
                 </a-text>
 
                 <!-- 3. Botones Interactivos -->
-                <!-- Botón LinkedIn / Portafolio (Azul Tech) -->
                 <a-plane 
                     class="clickable" 
                     linkhandler="url: https://www.linkedin.com" 
@@ -127,7 +208,6 @@
                     <a-text value="LinkedIn / Portafolio" align="center" color="#FFFFFF" width="2.2" position="0 0 0.02"></a-text>
                 </a-plane>
 
-                <!-- Botón Más Información / Proyecto (Verde Tech) -->
                 <a-plane 
                     class="clickable" 
                     linkhandler="url: https://github.com" 
@@ -141,7 +221,7 @@
             </a-entity>
         </a-marker>
 
-        <!-- Cámara con Raycaster táctil/mouse para interactuar con los botones -->
+        <!-- Cámara con Raycaster -->
         <a-entity camera raycaster="objects: .clickable" cursor="fuse: false; rayOrigin: mouse"></a-entity>
 
     </a-scene>
